@@ -1,17 +1,24 @@
 interface InputProps {
-    ref?: any;
     type: string;
     name?: string;
     required: boolean;
     value?: string;
     onChange?: any;
     placeholder?: string;
+    register: any;
 }
 
-export function Input(props: InputProps) {
+export function Input({ register, name, type, required, value, placeholder, onChange }: InputProps) {
     return (
-        <div className="mb-2">
-            <input type={props.type} name={props.name} required={props.required ?? false} value={props.value} placeholder={props.placeholder} className='relative text-base border border-gray-400 outline-none focus:border-transparent focus:ring-2 focus:ring-blue-500 rounded-md w-52 min-w-full md:min-w-0 h-8 p-2 hover:shadow-md transition duration-300'></input>
+        <div className="mb-2 h-full">
+            <input
+                {...register(name, { required })}
+                type={type}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder} 
+                className='min-w-full h-full bg-gray-100 rounded-full pl-5 focus:outline-none focus:ring-0 hover:shadow-md transition duration-300'
+            />
         </div>
     )
 }

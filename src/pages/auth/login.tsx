@@ -1,38 +1,75 @@
 import { useForm, Resolver, SubmitHandler } from "react-hook-form";
 import backgroundImage from "@images/intro-bg.jpg";
-import blogLogo from "@images/blog-logo.png";
+import blogLogoLabel from "@images/blog-logo-label.png";
 import { Input } from "@components/inputs/input";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { loginAPI } from "@/libs/api_calls";
+import { useState, useEffect } from "react";
 
 
 type FormFields = {
-    email: string;
+    username: string;
     password: string;
 };
 
 const resolver: Resolver<FormFields> = async (values) => {
-    return {
-        values: values.email !== "" && values.password !== "",
-        errors: {
-            email: {
-                type: "required",
-            },
-            password: {
-                type: "required",
-            },
-        },
+    const errors = {} as any;
+
+    if (!values.username) {
+        errors.username = {
+            type: "required",
+            message: "Username is required.",
+        };
     }
+
+    if (!values.password) {
+        errors.password = {
+        type: "required",
+        message: "Password is required.",
+        };
+    }
+
+    console.log("Values:", values);
+    console.log("Errors:", errors);
+
+    return {
+        values: Object.keys(errors).length === 0 ? values : {},
+        errors,
+    };
 }
 
 
 const Login = () => {
 
+    const navigate = useNavigate();
+
+    const [error, setError] = useState<string | null>(null);
+    const [showError, setShowError] = useState(false);
+
+    useEffect(() => {
+        if (error) {
+        setShowError(true);
+        const timer = setTimeout(() => {
+            setShowError(false);
+        }, 2000); // 2 seconds in milliseconds
+
+        return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     const { register, handleSubmit, formState: { errors } } = useForm<FormFields>({
         resolver,
     });
 
-    const login: SubmitHandler<FormFields> = (data) => {
-        console.log(data);
+    const login: SubmitHandler<FormFields> = async (data) => {
+        const response = await loginAPI({password: data.password, username: data.username});
+        if (response.status == 'success') {
+            sessionStorage.setItem("accessToken", response.accessToken);
+            sessionStorage.setItem("refreshToken", response.refreshToken);
+            sessionStorage.setItem("user", JSON.stringify(response.user));
+            return;
+        }
+        setError(response.error);
     }
     
 
@@ -40,47 +77,40 @@ const Login = () => {
         <div className="w-screen h-screen flex flex-row flex-wrap">
             <img src={backgroundImage} alt="intro-bg" className="w-1/2 h-full object-cover"></img>
             <div className="w-1/2 h-full text-center">
-                <img src={blogLogo} className="w-80 h-80 top-10 ml-auto mr-auto" alt="blog Logo"></img>
-                <div className="max-w-sm h-2/5 bg-blue-200 border-2 rounded-lg mt-20 ml-auto mr-auto shadow-md hover:shadow-2xl transition duration-300 p-10">
-                    <h2 className="text-lg font-bold">Login Account</h2>
-                        <span className={`relative top-2 text-red-500 text-base mb-1 mt-4 border border-red-500 py-px px-6 ${errors.email || errors.password ? "visible" : "invisible"}`}>
-                            {errors.email?.message || errors.password?.message}
-                        </span>
-                    <div className="m-5">
-                        <form method="POST" onSubmit={handleSubmit(login)}>
-                            <div className="relative placeholder:flex flex-col justify-start text-start">
-                                <h3 className="text-base font-medium">Email</h3>
-                                <Input 
-                                {...register("email", {
-                                    required: "Email is required.",
-                                    pattern: {
-                                        value: /^[^@ ]+@[^@ ]+\.[^@ .]{2,}$/,
-                                        message: "Invalid email address."
-                                    }
-                                })}
-                                placeholder="Enter your email here" 
-                                type="text" 
-                                name="email"
-                                required
+                <div className="w-full h-1/2 flex flex-col items-center justify-end">
+                    <img src={blogLogoLabel} className="w-80 h-80 top-10 ml-auto mr-auto" alt="blog Logo"></img>
+                </div>
+                <div className="w-full h-1/2 px-20 flex flex-col items-center">
+                    <h1 className="text-3xl text-center mb-8 font-semibold">Sign in to Blogosphere</h1>
+                    <form method="POST" onSubmit={handleSubmit(login)} className="w-2/3 max-w-full">
+                        <div className="w-full h-[40px] mb-8">
+                            <Input 
+                            register={register}
+                            placeholder="Username" 
+                            type="text" 
+                            name="username"
+                            required
+                            />
+                            {<p className={errors.username ? "pl-4 text-start font-semibold text-red-500 text-sm" : "hidden"}>{errors.username?.message}</p>}
+                        </div>
+                        
+                        <div className="w-full h-[40px] mb-8">
+                            <Input 
+                            register={register}
+                            placeholder="Password" 
+                            type="password" 
+                            name="password"
+                            required
                                 />
-                            </div>
-                            <div className="flex flex-col justify-start text-start">
-                                <h3 className="text-base font-medium">Password</h3>
-                                <Input 
-                                {...register("password")}
-                                placeholder="Enter your password here" 
-                                type="password" 
-                                name="password"
-                                required
-                                 />
-                            </div>
-
-                            <div className="flex flex-col justify-center content-center text-center gap-6">
-                                <button type="submit" className=" mx-auto bg-blue-500 hover:bg-blue-600 w-2/3 h-10 rounded-lg font-bold text-white" name="login" >Login</button>
-                                <a href="" className="text-base font-semibold">Sign Up</a>
-                            </div> 
-                        </form>
-                    </div>
+                            {errors.password && <p className="pl-4 text-start font-semibold text-red-500 text-sm">{errors.password.message}</p>}
+                            {showError && error && (
+                                <p className="text-center font-semibold text-red-500 text-sm">{error}</p>
+                            )}
+                        </div>
+                        
+                        <button type="submit" className=" mx-auto rounded-full bg-blue-500 hover:bg-blue-600 w-full h-10 font-bold text-white" name="login">Login</button>
+                    </form>
+                    <p className="mt-5 text-gray-500 font-medium">Don't have an account? <a href="/register" className="text-primary font-semibold">Sign Up now</a></p>
                 </div>
             </div>
         </div>
