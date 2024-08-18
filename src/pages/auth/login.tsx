@@ -5,6 +5,7 @@ import { Input } from "@components/inputs/input";
 import { useNavigate } from "react-router-dom";
 import { loginAPI } from "@/libs/api_calls";
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 
 
 type FormFields = {
@@ -29,8 +30,6 @@ const resolver: Resolver<FormFields> = async (values) => {
         };
     }
 
-    console.log("Values:", values);
-    console.log("Errors:", errors);
 
     return {
         values: Object.keys(errors).length === 0 ? values : {},
@@ -61,15 +60,24 @@ const Login = () => {
         resolver,
     });
 
-    const login: SubmitHandler<FormFields> = async (data) => {
-        const response = await loginAPI({password: data.password, username: data.username});
-        if (response.status == 'success') {
-            sessionStorage.setItem("accessToken", response.accessToken);
-            sessionStorage.setItem("refreshToken", response.refreshToken);
-            sessionStorage.setItem("user", JSON.stringify(response.user));
-            return;
-        }
-        setError(response.error);
+
+    const { mutate: login } = useMutation({
+        mutationFn: loginAPI,
+      })
+
+    const submitHandler: SubmitHandler<FormFields> = async (data) => {
+        login(data, {
+            onSuccess: (data) => {
+                if(data.status === 'error') return setError(data.error);
+
+                sessionStorage.setItem("accessToken", data.accessToken);
+                sessionStorage.setItem("refreshToken", data.refreshToken);
+                sessionStorage.setItem("user", JSON.stringify(data.user));
+            },
+            onError: (error) => {
+                setError(error.message);
+            }
+        })
     }
     
 
@@ -82,7 +90,7 @@ const Login = () => {
                 </div>
                 <div className="w-full h-1/2 px-20 flex flex-col items-center">
                     <h1 className="text-3xl text-center mb-8 font-semibold">Sign in to Blogosphere</h1>
-                    <form method="POST" onSubmit={handleSubmit(login)} className="w-2/3 max-w-full">
+                    <form method="POST" onSubmit={handleSubmit(submitHandler)} className="w-2/3 max-w-full">
                         <div className="w-full h-[40px] mb-8">
                             <Input 
                             register={register}
@@ -90,6 +98,7 @@ const Login = () => {
                             type="text" 
                             name="username"
                             required
+                            rounded={true}
                             />
                             {<p className={errors.username ? "pl-4 text-start font-semibold text-red-500 text-sm" : "hidden"}>{errors.username?.message}</p>}
                         </div>
@@ -101,16 +110,17 @@ const Login = () => {
                             type="password" 
                             name="password"
                             required
+                            rounded={true}
                                 />
                             {errors.password && <p className="pl-4 text-start font-semibold text-red-500 text-sm">{errors.password.message}</p>}
                             {showError && error && (
-                                <p className="text-center font-semibold text-red-500 text-sm">{error}</p>
+                                <p className="text-center font-semibold text-red-500 text-sm animate-pulse">{error}</p>
                             )}
                         </div>
                         
-                        <button type="submit" className=" mx-auto rounded-full bg-blue-500 hover:bg-blue-600 w-full h-10 font-bold text-white" name="login">Login</button>
+                        <button type="submit" className="mx-auto rounded-full bg-blue-500 hover:bg-blue-600 w-full h-10 font-bold text-white" name="login">Log In</button>
                     </form>
-                    <p className="mt-5 text-gray-500 font-medium">Don't have an account? <a href="/register" className="text-primary font-semibold">Sign Up now</a></p>
+                    <p className="mt-5 text-gray-500 font-medium">Don't have an account? <a onClick={() => navigate('/register')} className="text-primary font-semibold cursor-pointer">Sign Up now</a></p>
                 </div>
             </div>
         </div>
