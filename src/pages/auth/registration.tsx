@@ -1,51 +1,16 @@
-import { useForm, Resolver, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { Input } from "@/components/inputs/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { registerAPI } from "@/libs/api_calls";
+import TextField from '@mui/material/TextField';
+import { useMutation } from "@tanstack/react-query";
+
 
 type FormFields = {
     firstName: string;
     lastName: string;
     username: string;
     password: string
-}
-
-const resolver: Resolver<FormFields> = async (values) => {
-    const errors = {} as any;
-
-    if (!values.firstName) {
-        errors.firstName = {
-            type: "required",
-            message: "First name is required.",
-        };
-    }
-
-    if (!values.lastName) {
-        errors.lastName = {
-            type: "required",
-            message: "Last name is required.",
-        };
-    }
-
-    if (!values.username) {
-        errors.username = {
-            type: "required",
-            message: "Username is required.",
-        };
-    }
-
-    if (!values.password) {
-        errors.password = {
-            type: "required",
-            message: "Password is required.",
-        };
-    }
-
-    return {
-        values: Object.keys(errors).length === 0 ? values : {},
-        errors,
-    }
 }
 
 
@@ -55,85 +20,131 @@ const Register = () => {
     const [error, setError] = useState<string | null>(null);
     const [showError, setShowError] = useState(false);
 
-    const { register, handleSubmit, formState: { errors} } = useForm<FormFields>({
-        resolver,
-    });
+    const { mutate: registerUser } = useMutation({
+        mutationFn: registerAPI,
+    })
 
-    const registerUser: SubmitHandler<FormFields> = async (data) => {
-        const response = await registerAPI(data);
+    const { register, handleSubmit, formState: { errors} } = useForm<FormFields>();
 
-        if (response.status === 'success') {
-            navigate('/');
-        } else {
-            setError(response.message);
-            setShowError(true);
+    useEffect(() => {
+        if (error) {
+        setShowError(true);
+        const timer = setTimeout(() => {
+            setShowError(false);
+            setError(null)
+        }, 2000); // 2 seconds in milliseconds
+
+        return () => clearTimeout(timer);
         }
+    }, [error]);
+
+    const submitHandler: SubmitHandler<FormFields> = async (data) => {
+        registerUser(data, {
+            onError: (error: any) => {
+                setError(error.message)
+            },
+            onSuccess: (data) => {
+                if (data.status === 'error') return setError(data.message)
+                navigate('/')
+            }})
     }
 
     return (
         <>
-        <div className="w-screen h-screen flex flex-col items-center justify-center">
-            <div className="border rounded-lg w-2/3 h-4/6 flex flex-col bg-gray-600 bg-opacity-15 py-14 px-10 justify-center">
+        <div className="w-screen h-screen flex flex-col items-center justify-center bg-bg-overall">
+            <div className="border rounded-lg w-2/3 h-4/6 flex flex-col bg-gray-300 bg-opacity-50 border-none py-14 px-10 justify-center">
                 <h1 className="text-2xl mb-3 font-bold">Sign UP</h1>
                 <p className="font-semibold text-gray-700 text-opacity-85">Log in with your data that you entered during your registration</p>
             
-                <form method="POST" className="w-full" onSubmit={handleSubmit(registerUser)}>
+                <form method="POST" className="w-full" onSubmit={handleSubmit(submitHandler)}>
                     <div className="flex gap-4">
                         <div className="w-full h-[40px] my-8">
-                            <h2 className="font-semibold">Username</h2>
-                            <Input 
-                                register={register}
-                                placeholder="Username" 
-                                type="text" 
-                                name="username"
-                                required
-                                color="bg-gray-100"
+                            <TextField
+                                {...register("username", {
+                                    required: "Username is required",
+                                    minLength: {
+                                        value: 6,
+                                        message: "Username must be at least 6 characters long"
+                                    }
+                                })}
+                                fullWidth
+                                id="outlined-helper-text"
+                                label="Username"
+                                InputLabelProps={{
+                                    sx: {
+                                      fontSize: "14px",
+                                      fontWeight: "bold"
+                                    },
+                                  }}
+                                error={!!errors.username}
+                                helperText={errors.username ? errors.username.message : ""}
                             />
-                            {<p className={errors.username ? "pl-4 text-start font-semibold text-red-500 text-sm" : "hidden"}>{errors.username?.message}</p>}
                         </div>
 
                         <div className="w-full h-[40px] my-8">
-                            <h2 className="font-semibold">Password</h2>
-                            <Input 
-                                register={register}
-                                placeholder="Password" 
-                                type="password" 
-                                name="password"
-                                required
-                                color="bg-gray-100"
+                            <TextField
+                                {...register("password", {
+                                    required: "Password is required",
+                                    minLength: {
+                                        value: 8,
+                                        message: "Password must be at least 8 characters long"
+                                    }
+                                })}
+                                fullWidth
+                                id="outlined-error-helper-text"
+                                label="Password"
+                                InputLabelProps={{
+                                    sx: {
+                                      fontSize: "14px",
+                                      fontWeight: "bold"
+                                    },
+                                  }}
+                                error={!!errors.password}
+                                helperText={errors.password ? errors.password.message : ""}
                             />
-                            {<p className={errors.password ? "pl-4 text-start font-semibold text-red-500 text-sm" : "hidden"}>{errors.password?.message}</p>}
                         </div>
                     </div>
                     <div className="flex gap-4">
                         <div className="w-full h-[40px] my-8">
-                            <h2 className="font-semibold">First Name</h2>
-                            <Input
-                                register={register}
-                                placeholder="First Name"
-                                type="text"
-                                name="firstName"
-                                required
-                                color="bg-gray-100"
+                            <TextField
+                                {...register("firstName", {
+                                    required: "First Name is required",
+                                })}
+                                fullWidth
+                                id="outlined-helper-text"
+                                label="First Name"
+                                InputLabelProps={{
+                                    sx: {
+                                      fontSize: "14px",
+                                      fontWeight: "bold"
+                                    },
+                                  }}
+                                error={!!errors.firstName}
+                                helperText={errors.firstName ? errors.firstName.message : ""}
                             />
-                            {<p className={errors.firstName ? "pl-4 text-start font-semibold text-red-500 text-sm" : "hidden"}>{errors.firstName?.message}</p>}
                         </div>
                         <div className="w-full h-[40px] my-8">
-                            <h2 className="font-semibold">Last Name</h2>
-                            <Input
-                                register={register}
-                                placeholder="Last Name"
-                                type="text"
-                                name="lastName"
-                                required
-                                color="bg-gray-100"
+                            <TextField
+                                {...register("lastName", {
+                                    required: "Last Name is required",
+                                })}
+                                fullWidth
+                                id="outlined-helper-text"
+                                label="Last Name"
+                                InputLabelProps={{
+                                    sx: {
+                                      fontSize: "14px",
+                                      fontWeight: "bold"
+                                    },
+                                  }}
+                                error={!!errors.lastName}
+                                helperText={errors.lastName ? errors.lastName.message : ""}
                             />
-                            {<p className={errors.lastName ? "pl-4 text-start font-semibold text-red-500 text-sm" : "hidden"}>{errors.lastName?.message}</p>}
                         </div>
                     </div>
                     <div className="flex flex-col gap-2 mt-8 mb-4">
-                        <button type="submit" className="w-full h-10 bg-blue-500 hover:bg-blue-600 font-medium text-white transition duration-500 rounded-md">Sign Up</button>
-                        <button type="button" className="w-full h-10 border-blue-500 border-[2px] hover:bg-blue-200 font-medium text-blue-500 transition duration-500 rounded-md" onClick={() => navigate('/')}>Log In</button>
+                        <button type="submit" className="w-full h-10 bg-blue-600 hover:bg-blue-700 font-medium text-white transition duration-500 rounded-md">Sign Up</button>
+                        <button type="button" className="w-full h-10 border-blue-600 border-[2px] hover:bg-blue-200 font-medium text-blue-600 transition duration-500 rounded-md" onClick={() => navigate('/')}>Log In</button>
                     </div>
                 </form>
                 <div className="h-4">
