@@ -1,7 +1,7 @@
 import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
-import { RouterProvider, Navigate, createBrowserRouter } from 'react-router-dom'
+import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 
 import Loader from '@components/loader/loader'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -15,12 +15,24 @@ const Login = lazy(() =>
   wait(1000).then(() => import('@pages/auth/login'))
 );
 
+const Register = lazy(() => 
+  wait(1000).then(() => import('@pages/auth/registration'))
+);
+
 const router = createBrowserRouter([
   {
     path: "/",
     element: <>
       <Suspense fallback={<Loader />}>
         <Login />
+      </Suspense>
+    </>
+  },
+  {
+    path: "/register",
+    element: <>
+      <Suspense fallback={<Loader />}>
+        <Register />
       </Suspense>
     </>
   }
