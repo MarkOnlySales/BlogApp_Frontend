@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        'bg-overall': "url('/src/images/register_bg.jpg')",
+      },
       colors: {
         
       }

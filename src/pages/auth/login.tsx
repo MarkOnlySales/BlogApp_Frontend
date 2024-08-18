@@ -120,7 +120,7 @@ const Login = () => {
                         
                         <button type="submit" className="mx-auto rounded-full bg-blue-500 hover:bg-blue-600 w-full h-10 font-bold text-white" name="login">Log In</button>
                     </form>
-                    <p className="mt-5 text-gray-500 font-medium">Don't have an account? <a onClick={() => navigate('/register')} className="text-primary font-semibold cursor-pointer">Sign Up now</a></p>
+                    <p className="mt-5 text-gray-500 font-medium">Don't have an account? <a onClick={() => navigate('/register')} className="text-primary font-semibold cursor-pointer hover:text-gray-700">Sign Up now</a></p>
                 </div>
             </div>
         </div>
